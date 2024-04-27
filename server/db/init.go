@@ -16,6 +16,7 @@ const (
 CREATE TABLE IF NOT EXISTS Images
 (
     Hash  VARCHAR(32) PRIMARY KEY,
+    Main  VARCHAR(6),
     Scale VARCHAR(6),
     Date  INTEGER
 );`

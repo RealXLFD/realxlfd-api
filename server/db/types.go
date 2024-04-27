@@ -19,5 +19,5 @@ type RpicRequest struct {
 	Album  string
 	Scale  string
 	HasRid bool
-	Rid    int
+	Rid    int // TODO: make sure rid > 0
 }
