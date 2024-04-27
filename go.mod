@@ -4,7 +4,9 @@ go 1.22
 
 require (
 	git.realxlfd.cc/RealXLFD/golib v0.0.41
+	github.com/davidbyttow/govips/v2 v2.14.0
 	github.com/gin-gonic/gin v1.9.1
+	github.com/h2non/bimg v1.1.9
 	github.com/mattn/go-sqlite3 v1.14.22
 )
 
@@ -30,6 +32,7 @@ require (
 	github.com/xo/terminfo v0.0.0-20210125001918-ca9a967f8778 // indirect
 	golang.org/x/arch v0.3.0 // indirect
 	golang.org/x/crypto v0.21.0 // indirect
+	golang.org/x/image v0.10.0 // indirect
 	golang.org/x/net v0.22.0 // indirect
 	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect

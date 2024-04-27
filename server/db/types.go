@@ -2,6 +2,7 @@ package db
 
 type Image struct {
 	Hash  string
+	Main  string
 	Scale string
 	Date  int
 }

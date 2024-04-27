@@ -47,8 +47,8 @@ func (db *Sqlite) AddImage(data *Image) {
 	d := db.driver
 	var affected int64
 	result, err := d.Exec(
-		`INSERT OR IGNORE INTO Images (Hash, Scale, Date)
-VALUES (?, ?, ?);`, data.Hash, data.Scale, data.Date,
+		`INSERT OR IGNORE INTO Images (Hash, Main, Scale, Date)
+VALUES (?, ?, ?, ?);`, data.Hash, data.Scale, data.Date,
 	)
 	if err != nil {
 		goto Error
@@ -59,7 +59,8 @@ VALUES (?, ?, ?);`, data.Hash, data.Scale, data.Date,
 	}
 	log.Debug(
 		str.T(
-			"{} rows affected: add image({}, {}, {})", affected, data.Hash,
+			"{} rows affected: add image({}, {}, {}, {})", affected, data.Hash,
+			data.Main,
 			data.Scale,
 			data.Date,
 		),
@@ -68,8 +69,9 @@ VALUES (?, ?, ?);`, data.Hash, data.Scale, data.Date,
 Error:
 	log.Error(
 		str.T(
-			"sql error: can not add image({}, {}, {}) into table Images",
+			"sql error: can not add image({}, {}, {}, {}) into table Images",
 			data.Hash,
+			data.Main,
 			data.Scale,
 			data.Date,
 		),
@@ -105,8 +107,8 @@ Error:
 	)
 }
 
-func (db *Sqlite) Rpic(req *RpicRequest) (hash string, ok bool) {
-	template := "SELECT {} FROM {} {} ORDER BY {} LIMIT 1 {};"
+func (db *Sqlite) Rpic(req *RpicRequest) (hash string, main string, ok bool) {
+	template := "SELECT Images.Hash, Images.Main FROM Images JOIN Albums ON Images.Hash = Albums.Hash {} ORDER BY {} LIMIT 1 {};"
 	var dArgOrder, dArgOffset string
 	var result *sql.Row
 	if req.HasRid {
@@ -117,7 +119,7 @@ func (db *Sqlite) Rpic(req *RpicRequest) (hash string, ok bool) {
 		var count int
 		count, ok = db.Count(req)
 		if !ok {
-			return "", false
+			return "", "", false
 		}
 		if req.Rid < 0 {
 			req.Rid = -req.Rid
@@ -127,22 +129,28 @@ func (db *Sqlite) Rpic(req *RpicRequest) (hash string, ok bool) {
 	switch {
 	case req.Album != "" && req.Scale != "":
 		query := str.T(
-			template, "Images.Hash",
-			"Images JOIN Albums ON Images.Hash = Albums.Hash",
-			"WHERE Albums.Album = ? AND Images.Scale = ?", dArgOrder, dArgOffset,
+			template,
+			"WHERE Albums.Album = ? AND Images.Scale = ?", dArgOrder,
+			dArgOffset,
 		)
 		result = db.driver.QueryRow(query, req.Album, req.Scale)
 	case req.Album != "":
-		query := str.T(template, "Hash", "Albums", "WHERE Album = ?", dArgOrder, dArgOffset)
+		query := str.T(
+			template, "WHERE Albums.Album = ?", dArgOrder,
+			dArgOffset,
+		)
 		result = db.driver.QueryRow(query, req.Album)
 	case req.Scale != "":
-		query := str.T(template, "Hash", "Images", "WHERE Scale = ?", dArgOrder, dArgOffset)
+		query := str.T(
+			template, "WHERE Images.Scale = ?", dArgOrder,
+			dArgOffset,
+		)
 		result = db.driver.QueryRow(query, req.Scale)
 	default:
-		query := str.T(template, "Hash", "Images", "", dArgOrder, dArgOffset)
+		query := str.T(template, "", dArgOrder, dArgOffset)
 		result = db.driver.QueryRow(query)
 	}
-	err := result.Scan(&hash)
+	err := result.Scan(&hash, &main)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			goto NotFound
@@ -151,12 +159,17 @@ func (db *Sqlite) Rpic(req *RpicRequest) (hash string, ok bool) {
 	}
 	log.Debug(
 		str.T(
-			"get rpic({}) ", hash,
+			"get rpic({}, {}) ", hash, main,
 		),
 	)
-	return
+	return hash, main, true
 NotFound:
-	log.Debug(str.T("no image was found in album({}) with scale({})", req.Album, req.Scale))
+	log.Debug(
+		str.T(
+			"no image was found in album({}) with scale({})", req.Album,
+			req.Scale,
+		),
+	)
 Error:
 	log.Error(
 		str.T(
@@ -164,7 +177,7 @@ Error:
 			req.Album, req.Scale,
 		),
 	)
-	return "", false
+	return "", "", false
 }
 
 func (db *Sqlite) Count(req *RpicRequest) (count int, ok bool) {
@@ -193,14 +206,46 @@ func (db *Sqlite) Count(req *RpicRequest) (count int, ok bool) {
 				req.Scale,
 			),
 		)
-		return count, false
+		return 0, false
 	}
-	log.Info(str.T("find {} image in album({}) with scale({})"), req.Album, req.Scale)
+	log.Debug(
+		str.T("find {} image in album({}) with scale({})"), req.Album,
+		req.Scale,
+	)
 	return count, true
 }
 
-func (db *Sqlite) GetPath(hash string,format ) {
-	format size
+func (db *Sqlite) GetPath(hash, format, size string) (path string, ok bool) {
+	query := "SELECT Path FROM ImageData WHERE Hash = ? AND format = ? AND size = ?;"
+	result := db.driver.QueryRow(query, hash, format, size)
+	err := result.Scan(&path)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			log.Debug("find {} path with image({}, {}, {},)", hash, format, size)
+			return "", true
+		}
+		log.Error("sql error: can not execute query({}) in table ImageData", query)
+		return "", false
+	}
+	return path, true
 }
 
-func ()
+func (db *Sqlite) GetAllPaths(hash string) (paths []string, ok bool) {
+	query := "SELECT Path FROM ImageData WHERE Hash = ?;"
+	result, err := db.driver.Query(query, hash)
+	if err != nil {
+		log.Error("sql error: can not execute query({}) in table ImageData", query)
+		return nil, false
+	}
+	for result.Next() {
+		var path string
+		err = result.Scan()
+		if err != nil {
+			log.Error(str.T("sql error: {}", err.Error()))
+			return nil, false
+		}
+		paths = append(paths, path)
+	}
+	log.Debug(str.T("find {} paths for image({})", len(paths), hash))
+	return paths, true
+}

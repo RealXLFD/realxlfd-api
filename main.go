@@ -1,9 +1,11 @@
 package main
 
 import (
+	"github.com/davidbyttow/govips/v2/vips"
 	_ "github.com/mattn/go-sqlite3"
 )
 
 func main() {
-	println(uint(-100 % 3))
+	vips.Startup(nil)
+	defer vips.Shutdown()
 }

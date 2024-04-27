@@ -1,9 +1,9 @@
-package db
+package serverlog
 
 import "git.realxlfd.cc/RealXLFD/golib/cli/logger"
 
 var (
-	log = logger.New(
+	Log = logger.New(
 		logger.WithLevel(logger.LevelDebug),
 	)
 )

@@ -6,6 +6,11 @@ import (
 
 	"git.realxlfd.cc/RealXLFD/golib/utils/str"
 	_ "github.com/mattn/go-sqlite3"
+	"rpics-docker/serverlog"
+)
+
+var (
+	log = serverlog.Log
 )
 
 const (
