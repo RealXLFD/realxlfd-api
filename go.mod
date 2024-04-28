@@ -3,7 +3,7 @@ module rpics-docker
 go 1.22
 
 require (
-	git.realxlfd.cc/RealXLFD/golib v0.0.42
+	git.realxlfd.cc/RealXLFD/golib v0.0.43
 	github.com/EdlinOrg/prominentcolor v1.0.0
 	github.com/davidbyttow/govips/v2 v2.14.0
 	github.com/gin-gonic/gin v1.9.1
