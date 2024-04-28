@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"errors"
+	"regexp"
 	"strconv"
 
 	"git.realxlfd.cc/RealXLFD/golib/utils/str"
@@ -81,8 +82,8 @@ func (db *Sqlite) AddImageData(data *ImageData) {
 	d := db.driver
 	var affected int64
 	result, err := d.Exec(
-		`INSERT OR IGNORE INTO ImageData (Path, Hash, Size, Width, Height, Format)
-VALUES (?, ?, ?, ?, ?, ?);`, data.Path, data.Hash, data.Width, data.Height,
+		`INSERT OR IGNORE INTO ImageData (Path, Hash, Size, Quality, Format)
+VALUES (?, ?, ?, ?, ?);`, data.Path, data.Hash, data.Size, data.Quality,
 		data.Format,
 	)
 	if err != nil {
@@ -126,11 +127,12 @@ func (db *Sqlite) Rpic(req *RpicRequest) (hash string, main string, ok bool) {
 		}
 		dArgOffset = str.Join("OFFSET ", strconv.Itoa(req.Rid%count))
 	}
+	scale := parseScale(req.Scale)
 	switch {
-	case req.Album != "" && req.Scale != "":
+	case req.Album != "" && scale != "":
 		query := str.T(
 			template,
-			"WHERE Albums.Album = ? AND Images.Scale = ?", dArgOrder,
+			str.Join("WHERE Albums.Album = ? AND", scale), dArgOrder,
 			dArgOffset,
 		)
 		result = db.driver.QueryRow(query, req.Album, req.Scale)
@@ -140,9 +142,9 @@ func (db *Sqlite) Rpic(req *RpicRequest) (hash string, main string, ok bool) {
 			dArgOffset,
 		)
 		result = db.driver.QueryRow(query, req.Album)
-	case req.Scale != "":
+	case scale != "":
 		query := str.T(
-			template, "WHERE Images.Scale = ?", dArgOrder,
+			template, str.Join("WHERE", scale), dArgOrder,
 			dArgOffset,
 		)
 		result = db.driver.QueryRow(query, req.Scale)
@@ -180,6 +182,30 @@ Error:
 	return "", "", false
 }
 
+func parseScale(scale string) (query string) {
+	switch scale {
+	case "pc":
+		return " Images.Scale > 1"
+	case "mobile":
+		return " Images.Scale < 1"
+	default:
+		re := regexp.MustCompile(`([<>])(-?\d+(\.\d+)?)`)
+		matches := re.FindStringSubmatch(scale)
+		if matches == nil {
+			return ""
+		}
+		operation := matches[1]
+		scaleNum, err := strconv.ParseFloat(matches[2], 64)
+		if err != nil {
+			return ""
+		}
+		return str.T(
+			" Images.Scale {sign} {number}",
+			operation,
+			strconv.FormatFloat(scaleNum, 'f', 2, 64),
+		)
+	}
+}
 func (db *Sqlite) Count(req *RpicRequest) (count int, ok bool) {
 	template := "SELECT Count(DISTINCT Images.Hash) AS count FROM Images JOIN Albums ON Images.Hash = Albums.Hash {};"
 	var result *sql.Row
@@ -215,13 +241,16 @@ func (db *Sqlite) Count(req *RpicRequest) (count int, ok bool) {
 	return count, true
 }
 
-func (db *Sqlite) GetPath(hash, format, size string) (path string, ok bool) {
-	query := "SELECT Path FROM ImageData WHERE Hash = ? AND format = ? AND size = ?;"
-	result := db.driver.QueryRow(query, hash, format, size)
+func (db *Sqlite) GetPath(i *ImageData) (path string, ok bool) {
+	query := "SELECT Path FROM ImageData WHERE Hash = ? AND Format = ? AND Size = ? AND Quality = ?;"
+	result := db.driver.QueryRow(query, i.Hash, i.Format, i.Size, i.Quality)
 	err := result.Scan(&path)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			log.Debug("find {} path with image({}, {}, {},)", hash, format, size)
+			log.Debug(
+				"find {} path with image({}, {}, {}, {})", i.Hash, i.Format, i.Size,
+				strconv.Itoa(i.Quality),
+			)
 			return "", true
 		}
 		log.Error("sql error: can not execute query({}) in table ImageData", query)

@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS Images
 (
     Hash  VARCHAR(32) PRIMARY KEY,
     Main  VARCHAR(6),
-    Scale VARCHAR(6),
+    Scale REAL,
     Date  INTEGER
 );`
 	CreateTableAlbums = `
@@ -40,8 +40,7 @@ CREATE TABLE IF NOT EXISTS ImageData
     Path   TEXT PRIMARY KEY,
     Hash   VARCHAR(32) NOT NULL ,
     Size   VARCHAR(5) NOT NULL ,
-    Width  INTEGER,
-    Height INTEGER,
+    Quality INTEGER,
     Format VARCHAR(4),
     FOREIGN KEY (Hash) REFERENCES Images (Hash)
 );`

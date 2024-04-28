@@ -1,24 +1,15 @@
-package main
+package image
 
 import (
 	"image/png"
 	"os"
 
-	"git.realxlfd.cc/RealXLFD/golib/cli/logger"
 	"git.realxlfd.cc/RealXLFD/golib/utils/str"
 	"github.com/EdlinOrg/prominentcolor"
-	_ "github.com/mattn/go-sqlite3"
 )
 
-var (
-	log = logger.New()
-)
-
-func main() {
-	println(str.T("{hello},123", "nihao"))
-}
-
-func test(path string) string {
+// GetMainColor alert: 必须提供png格式图片, 返回6位HEX色值
+func GetMainColor(path string) string {
 	file, err := os.OpenFile(path, os.O_RDONLY, os.ModePerm)
 	if err != nil {
 		log.Error(str.T("can not open image file: {path}", path))
@@ -38,5 +29,6 @@ func test(path string) string {
 		return ""
 	}
 	color := mainColors[0].AsString()
+	log.Debug(str.T("get the main color from image: {color}", color))
 	return color
 }

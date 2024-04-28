@@ -3,17 +3,16 @@ package db
 type Image struct {
 	Hash  string
 	Main  string
-	Scale string
+	Scale float64
 	Date  int
 }
 
 type ImageData struct {
-	Path   string
-	Hash   string
-	Size   string
-	Width  int
-	Height int
-	Format string
+	Path    string
+	Hash    string
+	Size    string
+	Quality int
+	Format  string
 }
 
 type RpicRequest struct {
