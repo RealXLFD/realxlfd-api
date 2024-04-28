@@ -10,10 +10,11 @@ import (
 )
 
 var (
-	Gin *gin.Engine
-	SQL = db.Connect()
-	ENV = map[string]string{}
-	log = serverlog.Log
+	Gin  *gin.Engine
+	SQL  = db.Connect()
+	ENV  = map[string]string{}
+	log  = serverlog.Log
+	Root = "./"
 )
 
 func init() {

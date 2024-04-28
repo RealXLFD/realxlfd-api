@@ -1,11 +1,16 @@
 package main
 
 import (
+	"strconv"
+	"time"
+
 	_ "github.com/mattn/go-sqlite3"
-	"rpics-docker/server/db"
 )
 
 func main() {
-	sql := db.Connect()
+	for {
+		time.Sleep(time.Second)
 
+		println(strconv.Atoi(result))
+	}
 }

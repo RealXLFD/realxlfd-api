@@ -7,5 +7,5 @@ import (
 )
 
 var (
-	ThreadPool = pool.NewClosure(runtime.NumCPU(), 5).Run()
+	ThreadPool = pool.NewClosure(runtime.NumCPU(), runtime.NumCPU()).Run()
 )

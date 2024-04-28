@@ -18,15 +18,38 @@ var (
 	log = serverlog.Log
 )
 
-type Info map[string]metadata
-type metadata struct {
+type Info map[string]Metadata
+type Metadata struct {
 	Prominent string
 	Scale     float64
+	Width     int
+	Height    int
 }
 
 // GetInfo alert: 必须提供PNG格式图片
-func GetInfo(files ...string) (info Info) {
-	info = make(Info)
+func GetInfo(file string) (info Metadata) {
+	cmd := exec.Command("vipsheader", file)
+	out, err := cmd.Output()
+	if err != nil {
+		log.Error("error occurred during getting image header")
+	}
+	re := regexp.MustCompile(`^(.*): (\d+)x(\d+)`)
+	matches := re.FindStringSubmatch(string(out))
+	if matches == nil {
+		log.Error("can not parse image header infos")
+		return
+	}
+	width, _ := strconv.Atoi(matches[2])
+	height, _ := strconv.Atoi(matches[3])
+	scale := float64(width) / float64(height)
+	color := GetMainColor(file)
+	info = Metadata{color, scale, width, height}
+	return
+}
+
+// GetAllInfos alert: 必须提供PNG格式图片
+func GetAllInfos(files ...string) (infos Info) {
+	infos = make(Info)
 	files = append(files, str.T("--vips-concurrency={}", runtime.NumCPU()))
 	cmd := exec.Command("vipsheader", files...)
 	out, err := cmd.Output()
@@ -44,7 +67,7 @@ func GetInfo(files ...string) (info Info) {
 	for i := range len(lines) - 1 {
 		matches := re.FindStringSubmatch(lines[i])
 		if matches == nil {
-			log.Error("can not parse image header info")
+			log.Error("can not parse image header infos")
 			return nil
 		}
 		filename := matches[1]
@@ -55,7 +78,7 @@ func GetInfo(files ...string) (info Info) {
 			func() {
 				color := GetMainColor(filename)
 				if color != "" {
-					info[filename] = metadata{color, scale}
+					infos[filename] = Metadata{color, scale}
 				}
 				task.Done()
 			},
@@ -66,7 +89,7 @@ func GetInfo(files ...string) (info Info) {
 }
 
 func Convert(src, dst, size string, quality int) (ok bool) {
-	// info: vips thumbnail <src> <dst>[Q=?/lossless] <width> --height <pixels>
+	// info: vips thumbnail <src> <dst>[Q=?/lossless] <Width> --Height <pixels>
 	// info: vips copy <src> <dst>[Q=?/lossless]
 	var vipsQuality, vipsPixels string
 	var cmd *exec.Cmd
@@ -82,7 +105,7 @@ func Convert(src, dst, size string, quality int) (ok bool) {
 			src,
 			str.T("{file}[{args}]", dst, vipsQuality),
 			vipsPixels,
-			"--height",
+			"--Height",
 			vipsPixels,
 			"--size",
 			"down",

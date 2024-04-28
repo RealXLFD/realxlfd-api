@@ -278,3 +278,13 @@ func (db *Sqlite) GetAllPaths(hash string) (paths []string, ok bool) {
 	log.Debug(str.T("find {} paths for image({})", len(paths), hash))
 	return paths, true
 }
+
+func (db *Sqlite) Contains(hash string) bool {
+	query := "SELECT Hash FROM Images WHERE Hash = ?;"
+	row := db.driver.QueryRow(query, hash)
+	err := row.Scan(&hash)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false
+	}
+	return true
+}
