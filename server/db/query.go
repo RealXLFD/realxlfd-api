@@ -54,8 +54,10 @@ func (db *Sqlite) GetPath(i *ImageData) (path string, contentSize int64, ok bool
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			log.Debug(
-				"find {} path with image({}, {}, {}, {})", i.Hash, i.Format, i.Size,
-				strconv.Itoa(i.Quality),
+				str.T(
+					"no path found with image({}, {}, {}, {})", i.Hash, i.Format, i.Size,
+					strconv.Itoa(i.Quality),
+				),
 			)
 			return "", 0, true
 		}

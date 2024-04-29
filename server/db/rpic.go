@@ -14,10 +14,10 @@ func (db *Sqlite) Rpic(req *RpicRequest) (hash string, main string, ok bool) {
 	var dArgOrder, dArgOffset string
 	var result *sql.Row
 	if !req.HasRid {
-		dArgOrder = "Images.Date"
+		dArgOrder = "RANDOM()"
 		dArgOffset = ""
 	} else {
-		dArgOrder = "RANDOM()"
+		dArgOrder = "Images.Date"
 		var count int
 		count, ok = db.Count(req)
 		if !ok {

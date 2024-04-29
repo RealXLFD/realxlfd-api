@@ -47,7 +47,7 @@ func (db *Sqlite) AddImage(data *Image) {
 	var affected int64
 	result, err := d.Exec(
 		`INSERT OR IGNORE INTO Images (Hash, Main, Scale, Date)
-VALUES (?, ?, ?, ?);`, data.Hash, data.Scale, data.Date,
+VALUES (?, ?, ?, ?);`, data.Hash, data.Main, data.Scale, data.Date,
 	)
 	if err != nil {
 		goto Error
@@ -58,9 +58,8 @@ VALUES (?, ?, ?, ?);`, data.Hash, data.Scale, data.Date,
 	}
 	log.Debug(
 		str.T(
-			"{} rows affected: add image({}, {}, {}, {})", affected, data.Hash,
+			"{} rows affected: add image({}, {}, {})", affected, data.Hash,
 			data.Main,
-			data.Scale,
 			data.Date,
 		),
 	)

@@ -2,6 +2,8 @@ package db
 
 import (
 	"database/sql"
+	"os"
+	"path/filepath"
 	"strconv"
 
 	"git.realxlfd.cc/RealXLFD/golib/utils/str"
@@ -14,7 +16,7 @@ var (
 )
 
 const (
-	Path = "./rpics.db"
+	RpicDBPath = "./rpic/rpics.db"
 )
 
 const (
@@ -51,9 +53,10 @@ CREATE TABLE IF NOT EXISTS ImageData
 )
 
 func Connect() *Sqlite {
-	db, err := sql.Open("sqlite3", Path)
+	_ = os.MkdirAll(filepath.Dir(RpicDBPath), os.ModePerm)
+	db, err := sql.Open("sqlite3", RpicDBPath)
 	if err != nil {
-		panic(str.Join("can not connect to database: ", Path))
+		panic(str.Join("can not connect to database: ", RpicDBPath))
 	}
 	justexec(db, CreateTableImages)
 	justexec(db, CreateTableAlbums)

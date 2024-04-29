@@ -2,6 +2,7 @@ package image
 
 import (
 	"crypto/md5"
+	"encoding/hex"
 	"io"
 	"os"
 
@@ -9,7 +10,7 @@ import (
 )
 
 func MD5(src string) string {
-	file, err := os.OpenFile(src, os.O_RDONLY, os.ModePerm)
+	file, err := os.Open(src)
 	if err != nil {
 		log.Error(str.T("can not open file: {src}", src))
 		return ""
@@ -21,10 +22,9 @@ func MD5(src string) string {
 		}
 	}(file)
 	hash := md5.New()
-	_, err = io.Copy(hash, file)
-	if err != nil {
+	if _, err = io.Copy(hash, file); err != nil {
 		log.Error(str.T("error occurred while generate md5 from: {src}", src))
 		return ""
 	}
-	return str.F("%x", md5.Sum(nil))
+	return hex.EncodeToString(hash.Sum(nil))
 }

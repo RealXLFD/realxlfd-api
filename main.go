@@ -2,10 +2,11 @@ package main
 
 import (
 	"rpics-docker/server"
+	"rpics-docker/server/func/rpic"
+	"rpics-docker/server/func/welcome"
 )
 
 func main() {
-	server.ServeWelcome()
-	server.ServeRpic()
-	server.Run()
+	port := readConfig()
+	server.Run(port, rpic.Serve, welcome.Serve)
 }

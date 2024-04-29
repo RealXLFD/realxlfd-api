@@ -7,10 +7,8 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-	"sync"
 
 	"git.realxlfd.cc/RealXLFD/golib/utils/str"
-	serverruntime "rpics-docker/runtime"
 	"rpics-docker/serverlog"
 )
 
@@ -62,8 +60,6 @@ func GetAllInfos(files ...string) (infos Info) {
 		log.Warn("invalid image: {file}", files[0])
 		return nil
 	}
-	task := sync.WaitGroup{}
-	task.Add(len(lines) - 1)
 	for i := range len(lines) - 1 {
 		matches := re.FindStringSubmatch(lines[i])
 		if matches == nil {
@@ -74,17 +70,11 @@ func GetAllInfos(files ...string) (infos Info) {
 		width, _ := strconv.Atoi(matches[2])
 		height, _ := strconv.Atoi(matches[3])
 		scale := float64(width) / float64(height)
-		serverruntime.ThreadPool.Push(
-			func() {
-				color := GetMainColor(filename)
-				if color != "" {
-					infos[filename] = Metadata{color, scale, width, height}
-				}
-				task.Done()
-			},
-		)
+		color := GetMainColor(filename)
+		if color != "" {
+			infos[filename] = Metadata{color, scale, width, height}
+		}
 	}
-	task.Wait()
 	return
 }
 
@@ -118,6 +108,6 @@ func Convert(src, dst, size string, quality int) (ok bool) {
 		log.Error(str.T("vips error: can not convert {file}", filepath.Base(src)))
 		return false
 	}
-	log.Debug("convert {src} to {dst}", src, dst)
+	log.Debug(str.T("convert {src} to {dst}", src, dst))
 	return true
 }

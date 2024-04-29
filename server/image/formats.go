@@ -7,7 +7,6 @@ var (
 		"jpg":  "image/jpeg",
 		"gif":  "image/gif",
 		"png":  "image/png",
-		"avif": "image/avif",
 		"tiff": "image/tiff",
 	}
 	Quality = map[string]int{
@@ -33,5 +32,6 @@ var (
 		"2k":    "2560",
 		"1080p": "1080",
 		"720p":  "720",
+		"480p":  "480",
 	}
 )
