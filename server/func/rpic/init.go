@@ -53,7 +53,15 @@ func throttling(context *gin.Context) {
 		return
 	}
 	if !Throttler.Add(context.ClientIP()) {
-		context.AbortWithStatus(429)
+		context.AbortWithStatusJSON(
+			429, gin.H{
+				"code": 1,
+				"message": str.T(
+					"too many requests, please retry after {time}",
+					(Throttler.Expire(context.ClientIP()) / time.Second * time.Second).String(),
+				),
+			},
+		)
 		return
 	}
 }

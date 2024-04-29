@@ -20,7 +20,7 @@ var (
 		"silent": gin.ReleaseMode,
 		"error":  gin.ReleaseMode,
 		"warn":   gin.ReleaseMode,
-		"info":   gin.DebugMode,
+		"info":   gin.ReleaseMode,
 		"debug":  gin.DebugMode,
 	}
 )

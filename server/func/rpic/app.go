@@ -34,14 +34,11 @@ func Serve(engine *gin.Engine) {
 		"/rpic/delete/:hash/:album", prehandler.Auth, rpicDelete,
 	)
 	engine.GET(
-		"/rpic/get/:album", throttling, checkQuery, reqRpic,
+		"/rpic/get/:album", throttling, reqRpic,
 	)
 	engine.GET(
-		"/rpic/get/:album/:rid", throttling, checkQuery, reqRpic,
+		"/rpic/get", throttling, reqRpic,
 	)
-	engine.GET(
-		"/rpic/get", throttling, checkQuery, reqRpic,
-	)
-	engine.GET("/rpic", throttling, checkQuery, reqRpic)
+	engine.GET("/rpic", throttling, reqRpic)
 	log.Info("rpic api loaded")
 }

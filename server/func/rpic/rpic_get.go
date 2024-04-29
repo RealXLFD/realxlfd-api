@@ -2,6 +2,7 @@ package rpic
 
 import (
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -17,35 +18,49 @@ import (
 )
 
 func reqRpic(context *gin.Context) {
-	log.Info(
-		str.T(
-			"new rpic request({path}) from {ip}", context.Request.URL.Path, context.ClientIP(),
-		),
-	)
-	album := strings.Trim(context.Param("album"), "/")
-	rawRid, ok := context.GetQuery("rid")
-	if !ok {
-		rawRid = strings.Trim(context.Param("rid"), "/")
-		if rawRid != "" {
-			ok = true
+	var queries Queries
+	var err error
+	var queryValues url.Values
+	var album string
+	// parse queries
+	if index := strings.LastIndex(context.Request.URL.Path, "!"); index != -1 {
+		queryValues, err = url.ParseQuery(context.Request.URL.Path[index+1:])
+		if err != nil {
+			shortcut.RespStatusJSON(context, 1, "invalid query string")
+			return
 		}
+		queries = Queries(queryValues)
+		rawAlbum := context.Param("album")
+		i := strings.LastIndex(rawAlbum, "!")
+		if i > 0 {
+			album = strings.Trim(rawAlbum[:i], "/")
+		}
+	} else {
+		queries = Queries(context.Request.URL.Query())
+		album = strings.Trim(context.Param("album"), "/")
 	}
+	// check queries
+	if !checkQuery(context, queries) {
+		return
+	}
+	// parse rid
+	rawRid, ok := queries.Key("rid")
 	rid, _ := strconv.Atoi(rawRid)
 	rpicReq := &db.RpicRequest{
 		Album:  album,
-		Scale:  context.Query("scale"),
+		Scale:  queries.Get("scale"),
 		HasRid: ok,
 		Rid:    rid,
 	}
-	quality, ok := image.Quality[context.Query("quality")]
+	quality, ok := image.Quality[queries.Get("quality")]
 	if !ok {
 		quality = 3
 	}
 	reqData := defaultData(
 		&db.ImageData{
-			Size:    context.Query("size"),
+			Size:    queries.Get("size"),
 			Quality: quality,
-			Format:  context.Query("format"),
+			Format:  queries.Get("format"),
 		},
 	)
 	var main string
@@ -97,7 +112,7 @@ func reqRpic(context *gin.Context) {
 		}
 		contentSize = stat.Size()
 	}
-	if _, ok = context.GetQuery("imageAve"); ok {
+	if _, ok = queries.Key("imageAve"); ok {
 		context.JSON(
 			http.StatusOK,
 			gin.H{
@@ -156,50 +171,63 @@ func defaultData(i *db.ImageData) *db.ImageData {
 	return i
 }
 
-func checkQuery(context *gin.Context) {
-	if scale, ok := context.GetQuery("scale"); ok {
+type Queries url.Values
+
+func (q Queries) Key(key string) (string, bool) {
+	v, ok := q[key]
+	if !ok {
+		return "", false
+	}
+	return v[0], true
+}
+
+func (q Queries) Get(key string) string {
+	v, ok := q.Key(key)
+	if !ok {
+		return ""
+	}
+	return v
+}
+
+func checkQuery(context *gin.Context, queries Queries) bool {
+	if scale, ok := queries.Key("scale"); ok {
 		if scale == "" {
 			shortcut.RespStatusJSON(context, 1, str.T("invalid scale value: {scale}", scale))
-			context.Abort()
-			return
+			return false
 		}
 		scale := db.ParseScale(scale)
 		if scale == "" {
 			shortcut.RespStatusJSON(context, 1, str.T("invalid scale value: {scale}", scale))
-			context.Abort()
+			return false
 		}
-		return
 	}
-	if rawRid, ok := context.GetQuery("rid"); ok {
+	if rawRid, ok := queries.Key("rid"); ok {
 		_, err := strconv.Atoi(rawRid)
 		if err != nil {
 			shortcut.RespStatusJSON(context, 1, str.T("invalid rid value: {rid}", rawRid))
-			context.Abort()
+			return false
 		}
-		return
 	}
-	if size, ok := context.GetQuery("size"); ok {
+	if size, ok := queries.Key("size"); ok {
 		_, ok = image.Sizes[size]
 		if !ok {
 			shortcut.RespStatusJSON(context, 1, str.T("invalid size value: {size}", size))
-			context.Abort()
+			return false
 		}
-		return
 	}
-	if quality, ok := context.GetQuery("quality"); ok {
+	if quality, ok := queries.Key("quality"); ok {
 		_, ok = image.Quality[quality]
 		if !ok {
 			shortcut.RespStatusJSON(context, 1, str.T("invalid quality value: {quality}", quality))
-			context.Abort()
+			return false
 		}
-		return
 	}
-	if format, ok := context.GetQuery("format"); ok {
+	if format, ok := queries.Key("format"); ok {
 		_, ok = image.Formats[format]
 		if !ok {
 			shortcut.RespStatusJSON(context, 1, str.T("invalid format value: {format}", format))
-			context.Abort()
+			return false
 		}
-		return
 	}
+	return true
 }
