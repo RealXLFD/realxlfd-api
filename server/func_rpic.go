@@ -1,30 +1,26 @@
 package server
 
 import (
-	"github.com/gin-gonic/gin"
+	"os"
 )
 
-func RpicServer() {
-	Gin.POST("/rpic/add/:album", rpicPostUpload)
-	Gin.PUT("/rpic/add")
+func ServeRpic() {
+	err := os.MkdirAll("./temp", os.ModePerm)
+	if err != nil {
+		log.Error("can not create dir ./temp")
+	}
+	Gin.POST("/rpic/add/:album", auth, rpicPOSTUpload)
+	Gin.PUT("/rpic/add/:album", auth, rpicPUTUpload)
 	Gin.GET(
-		"/rpic/delete/:hash", func(context *gin.Context) {
-			// TODO: 处理图片删除
-		},
+		"/rpic/delete/:hash", auth, rpicDelete,
 	)
 	Gin.GET(
-		"/rpic/delete/:hash/:album", func(context *gin.Context) {
-			// TODO: 处理删除指定相册的图片
-		},
+		"/rpic/delete/:hash/:album", auth, rpicDelete,
 	)
 	Gin.GET(
-		"/rpic/get/:album", func(context *gin.Context) {
-			// TODO: rpics with album
-		},
+		"/rpic/get/:album", reqRpic,
 	)
 	Gin.GET(
-		"/rpic/get", func(context *gin.Context) {
-			// TODO: rpics
-		},
+		"/rpic/get", reqRpic,
 	)
 }

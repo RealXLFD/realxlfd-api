@@ -7,21 +7,20 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Auth info: 验证方式：http header auth标头，或url query的 key
-func Auth(context *gin.Context) (ok bool) {
+// auth info: 验证方式：http header auth标头，或url query的 key
+func auth(context *gin.Context) {
 	token, hasKey := context.GetQuery("key")
 	if hasKey && token == ENV["TOKEN"] {
-		return true
+		return
 	}
 	token = context.GetHeader("auth")
 	if token == ENV["TOKEN"] {
-		return true
+		return
 	}
-	context.JSON(
+	context.AbortWithStatusJSON(
 		http.StatusOK, gin.H{
 			"code": 1,
 			"msg":  str.T("authenticate failed: invalid token {token}", token),
 		},
 	)
-	return false
 }

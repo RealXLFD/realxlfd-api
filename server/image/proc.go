@@ -10,7 +10,7 @@ import (
 	"sync"
 
 	"git.realxlfd.cc/RealXLFD/golib/utils/str"
-	"rpics-docker/server"
+	serverruntime "rpics-docker/runtime"
 	"rpics-docker/serverlog"
 )
 
@@ -26,7 +26,7 @@ type Metadata struct {
 	Height    int
 }
 
-// GetInfo alert: 必须提供PNG格式图片
+// GetInfo alert: 必须提供PNG格式图片, 确保输入路径为绝对路径
 func GetInfo(file string) (info Metadata) {
 	cmd := exec.Command("vipsheader", file)
 	out, err := cmd.Output()
@@ -47,7 +47,7 @@ func GetInfo(file string) (info Metadata) {
 	return
 }
 
-// GetAllInfos alert: 必须提供PNG格式图片
+// GetAllInfos alert: 必须提供PNG格式图片, 确保输入路径为绝对路径
 func GetAllInfos(files ...string) (infos Info) {
 	infos = make(Info)
 	files = append(files, str.T("--vips-concurrency={}", runtime.NumCPU()))
@@ -74,11 +74,11 @@ func GetAllInfos(files ...string) (infos Info) {
 		width, _ := strconv.Atoi(matches[2])
 		height, _ := strconv.Atoi(matches[3])
 		scale := float64(width) / float64(height)
-		server.ThreadPool.Push(
+		serverruntime.ThreadPool.Push(
 			func() {
 				color := GetMainColor(filename)
 				if color != "" {
-					infos[filename] = Metadata{color, scale}
+					infos[filename] = Metadata{color, scale, width, height}
 				}
 				task.Done()
 			},
@@ -88,6 +88,7 @@ func GetAllInfos(files ...string) (infos Info) {
 	return
 }
 
+// Convert alert: 确保输入路径为绝对路径
 func Convert(src, dst, size string, quality int) (ok bool) {
 	// info: vips thumbnail <src> <dst>[Q=?/lossless] <Width> --Height <pixels>
 	// info: vips copy <src> <dst>[Q=?/lossless]
@@ -96,24 +97,25 @@ func Convert(src, dst, size string, quality int) (ok bool) {
 	vipsQuality = QualityArr[quality]
 	switch size {
 	case "raw":
-		cmd = exec.Command("vips", "copy", src, str.T("{file}[{args}]", dst, vipsQuality))
+		cmd = exec.Command("vips", "copy", src, str.Join(dst, vipsQuality))
 	default:
 		vipsPixels = Sizes[size]
 		cmd = exec.Command(
 			"vips",
 			"thumbnail",
 			src,
-			str.T("{file}[{args}]", dst, vipsQuality),
+			str.Join(dst, vipsQuality),
 			vipsPixels,
-			"--Height",
+			"--height",
 			vipsPixels,
 			"--size",
 			"down",
 		)
 	}
+	log.Debug(str.T("execute: {cmd}", cmd.String()))
 	err := cmd.Run()
 	if err != nil {
-		log.Error("vips error: can not convert {file}", filepath.Base(src))
+		log.Error(str.T("vips error: can not convert {file}", filepath.Base(src)))
 		return false
 	}
 	log.Debug("convert {src} to {dst}", src, dst)

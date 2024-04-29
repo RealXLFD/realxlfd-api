@@ -20,10 +20,14 @@ var (
 func init() {
 	Gin = gin.Default()
 	Gin.Use(CORSMiddleware())
-	ENV["TOKEN"] = os.Getenv("TOKEN")
+	token := os.Getenv("TOKEN")
+	if token == "" {
+		token = "realxlfd"
+	}
+	ENV["TOKEN"] = token
 }
 
-func Welcome() {
+func ServeWelcome() {
 	Gin.GET(
 		"/", func(context *gin.Context) {
 			context.JSON(
@@ -40,11 +44,7 @@ func Welcome() {
 	)
 	// info: 身份验证测试
 	Gin.GET(
-		"/auth", func(context *gin.Context) {
-			ok := Auth(context)
-			if !ok {
-				return
-			}
+		"/auth", auth, func(context *gin.Context) {
 			context.JSON(
 				http.StatusOK, gin.H{
 					"code": 0,
@@ -62,4 +62,12 @@ func Run() {
 		log.Error("server failure: {err}", err.Error())
 		os.Exit(1)
 	}
+}
+
+func respStatusJSON(context *gin.Context, code int, msg string) {
+	context.JSON(
+		http.StatusOK, gin.H{
+			"code": code, "msg": msg,
+		},
+	)
 }

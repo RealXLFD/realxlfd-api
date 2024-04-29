@@ -14,8 +14,9 @@ var (
 )
 
 const (
-	Path = "./db/rpics.db"
+	Path = "./rpics.db"
 )
+
 const (
 	CreateTableImages = `
 CREATE TABLE IF NOT EXISTS Images
@@ -42,6 +43,7 @@ CREATE TABLE IF NOT EXISTS ImageData
     Size   VARCHAR(5) NOT NULL ,
     Quality INTEGER,
     Format VARCHAR(4),
+    ContentSize INTEGER,
     FOREIGN KEY (Hash) REFERENCES Images (Hash)
 );`
 	CreateIndexImageDate = `CREATE INDEX IF NOT EXISTS idx_date ON Images(Date);`
