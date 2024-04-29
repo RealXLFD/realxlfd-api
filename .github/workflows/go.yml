@@ -23,7 +23,7 @@ jobs:
     - name: Install dependencies
       run: go mod tidy
     - name: Build
-      run: go build -v . -o realxlfd-api-runner
+      run: go build -o realxlfd-api-runner -v . 
     - name: 'Upload Artifact'
       uses: actions/upload-artifact@v4
       with:
