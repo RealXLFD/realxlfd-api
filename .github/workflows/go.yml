@@ -23,7 +23,7 @@ jobs:
     - name: Install dependencies
       run: go mod tidy
     - name: Build
-      run: go build -o realxlfd-api-runner -v . 
+      run: go build -o realxlfd-api-runner -v -tags=jsoniter .
     - name: 'Upload Artifact'
       uses: actions/upload-artifact@v4
       with:
