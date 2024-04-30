@@ -110,7 +110,7 @@ func rpicPOSTUpload(context *gin.Context) {
 				server.SQL.AddAlbum(hash, album)
 				finishes = append(
 					finishes, gin.H{
-						"hash":       hash,
+						"id":         hash,
 						"main_color": meta.Prominent,
 						"width":      meta.Width,
 						"height":     meta.Height,
@@ -268,7 +268,7 @@ func rpicPUTUpload(context *gin.Context) {
 			"msg":  str.T("add image to {album} successfully", album),
 			"images": []gin.H{
 				{
-					"hash":       hash,
+					"id":         hash,
 					"main_color": meta.Prominent,
 					"width":      meta.Width,
 					"height":     meta.Height,

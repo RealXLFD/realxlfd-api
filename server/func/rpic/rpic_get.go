@@ -46,7 +46,7 @@ func rpicReq(context *gin.Context) {
 	// parse rid
 	rawRid, ok := queries.Key("rid")
 	rid, _ := strconv.Atoi(rawRid)
-	rpicReq := &db.RpicRequest{
+	rpicRequestQueries := &db.RpicRequest{
 		Album:  album,
 		Scale:  queries.Get("scale"),
 		HasRid: ok,
@@ -64,10 +64,20 @@ func rpicReq(context *gin.Context) {
 		},
 	)
 	var main string
-	reqData.Hash, main, ok = server.SQL.Rpic(rpicReq)
-	if !ok {
-		shortcut.RespStatusJSON(context, 1, "image not found")
-		return
+	var id string
+	if id, ok = queries.Key("id"); ok {
+		count, _ := server.SQL.CountAlbums(id)
+		if count == 0 {
+			shortcut.RespStatusJSON(context, 1, str.T("image with id({}) not found", id))
+			return
+		}
+		reqData.Hash = id
+	} else {
+		reqData.Hash, main, ok = server.SQL.Rpic(rpicRequestQueries)
+		if !ok {
+			shortcut.RespStatusJSON(context, 1, "image not found")
+			return
+		}
 	}
 	if _, ok = queries.Key("imageAve"); ok {
 		server.SQL.StatAddRequest()
@@ -105,11 +115,11 @@ func rpicReq(context *gin.Context) {
 		ThreadPool.Push(
 			func() {
 				defer task.Done()
-				reqData.Path = picConvert(pngPath, rpicReq.Album, reqData)
+				reqData.Path = picConvert(pngPath, rpicRequestQueries.Album, reqData)
 			},
 		)
 		task.Wait()
-		reqData.Path = picConvert(pngPath, rpicReq.Album, reqData)
+		reqData.Path = picConvert(pngPath, rpicRequestQueries.Album, reqData)
 		contentSize = server.SQL.AddImageData(reqData)
 		server.SQL.StatAddImageCache(contentSize, true)
 	}

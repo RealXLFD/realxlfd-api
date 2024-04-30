@@ -11,6 +11,7 @@ import (
 )
 
 func rpicList(c *gin.Context) {
+	limit := 25
 	album := c.Param("album")
 	rawPage := c.Query("page")
 	if rawPage == "" {
@@ -22,7 +23,7 @@ func rpicList(c *gin.Context) {
 		return
 	}
 	if album == "" {
-		shortcut.RespStatusJSON(c, 1, "album name is empty")
+		shortcut.RespStatusJSON(c, 1, "please specify album name")
 		return
 	}
 
@@ -35,7 +36,7 @@ func rpicList(c *gin.Context) {
 		shortcut.RespStatusJSON(c, 1, str.T("empty album({})", album))
 		return
 	}
-	ids := server.SQL.ListPics(album, 15, page)
+	ids := server.SQL.ListPics(album, limit, page)
 	if ids == nil {
 		shortcut.RespStatusJSON(c, 1, "internal server error")
 		return
@@ -43,11 +44,11 @@ func rpicList(c *gin.Context) {
 	c.JSON(
 		http.StatusOK, gin.H{
 			"code":         0,
-			"msg":          str.T("find {} images in album({})", len(ids), album),
+			"msg":          str.T("find {} images in album({})", count, album),
 			"total_images": count,
 			"images":       ids,
 			"page":         page,
-			"total_page":   (count + 14) / 15,
+			"total_page":   (count + limit - 1) / limit,
 		},
 	)
 	return
