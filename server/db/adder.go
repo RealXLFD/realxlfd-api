@@ -9,7 +9,7 @@ import (
 
 type Sqlite struct {
 	driver   *sql.DB
-	rpicStat *RpicStat
+	RpicStat *RpicStat
 }
 
 func (db *Sqlite) AddAlbum(hash, album string) {

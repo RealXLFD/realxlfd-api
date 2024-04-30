@@ -25,20 +25,26 @@ func Serve(engine *gin.Engine) {
 	if err != nil {
 		log.Error("can not create dir ./temp")
 	}
-	engine.POST("/rpic/add/:album", prehandler.Auth, rpicPOSTUpload)
-	engine.PUT("/rpic/add/:album", prehandler.Auth, rpicPUTUpload)
-	engine.GET(
-		"/rpic/delete/:hash", prehandler.Auth, rpicDelete,
-	)
-	engine.GET(
-		"/rpic/delete/:hash/:album", prehandler.Auth, rpicDelete,
-	)
-	engine.GET(
-		"/rpic/get/:album", throttling, reqRpic,
-	)
-	engine.GET(
-		"/rpic/get", throttling, reqRpic,
-	)
-	engine.GET("/rpic", throttling, reqRpic)
+	apiGroup := engine.Group("/rpic")
+	{
+		apiGroup.POST("/add/:album", prehandler.Auth, rpicPOSTUpload)
+		apiGroup.PUT("/add/:album", prehandler.Auth, rpicPUTUpload)
+		apiGroup.GET(
+			"/delete/:hash", prehandler.Auth, rpicDelete,
+		)
+		apiGroup.GET(
+			"/delete/:hash/:album", prehandler.Auth, rpicDelete,
+		)
+		apiGroup.GET(
+			"/get/:album", throttling, rpicReq,
+		)
+		apiGroup.GET(
+			"/get", throttling, rpicReq,
+		)
+		apiGroup.GET("/", throttling, rpicReq)
+		apiGroup.GET("/status", rpicStatus)
+		apiGroup.GET("/list/:album", rpicList)
+		apiGroup.GET("/list", rpicList)
+	}
 	log.Info("rpic api loaded")
 }

@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"sync"
 
 	"git.realxlfd.cc/RealXLFD/golib/utils/str"
 	_ "github.com/mattn/go-sqlite3"
@@ -86,23 +85,32 @@ func Connect() *Sqlite {
 		// info: read table RpicStat
 		var requestCount, cacheCount int
 		var imageSpace, cacheSpace int64
-		row = db.QueryRow("SELECT (Request,CacheCount,ImageSpace,CacheSpace) FROM RpicStat;")
+		row = db.QueryRow("SELECT Request, CacheCount, ImageSpace, CacheSpace FROM RpicStat;")
 		err = row.Scan(&requestCount, &cacheCount, &imageSpace, &cacheSpace)
 		if err != nil {
 			log.Error("sql error: can not get data from table(RpicStat)")
 		}
 		rpicStat = &RpicStat{
-			lock:         &sync.Mutex{},
 			requestCount: requestCount,
 			cacheCount:   cacheCount,
 			imageSpace:   imageSpace,
 			cacheSpace:   cacheSpace,
+			runner:       false,
+			RequestAdder: make(chan struct{}, 10),
+			CacheAdder: make(
+				chan struct {
+					contentSize int64
+					isCache     bool
+				}, 10,
+			),
 		}
 	}
-	return &Sqlite{
+	sqliteDB := &Sqlite{
 		driver:   db,
-		rpicStat: rpicStat,
+		RpicStat: rpicStat,
 	}
+	sqliteDB.RunStat()
+	return sqliteDB
 }
 
 func justexec(db *sql.DB, state string) {

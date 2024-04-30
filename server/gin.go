@@ -19,6 +19,7 @@ var (
 
 func Run(port string, apps ...func(engine *gin.Engine)) {
 	Gin = gin.Default()
+	_ = Gin.SetTrustedProxies(nil)
 	Gin.Use(middleware.CORSMiddleware())
 	token := os.Getenv("TOKEN")
 	if token == "" {

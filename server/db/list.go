@@ -24,7 +24,17 @@ func (db *Sqlite) ListAlbums() (albums []string) {
 	return
 }
 
-func (db *Sqlite) CountPics(album string) (count int, ok bool) {
+func (db *Sqlite) CountAllPics() (count int) {
+	row := db.driver.QueryRow("SELECT COUNT(DISTINCT Hash) FROM Images;")
+	err := row.Scan(&count)
+	if err != nil {
+		log.Error("sql failed: can not count image id from database")
+		return 0
+	}
+	return count
+}
+
+func (db *Sqlite) CountPicsByAlbum(album string) (count int, ok bool) {
 	query := "SELECT COUNT(DISTINCT Hash) FROM Albums WHERE Album = ?;"
 	row := db.driver.QueryRow(query, album)
 	err := row.Scan(&count)
@@ -36,7 +46,7 @@ func (db *Sqlite) CountPics(album string) (count int, ok bool) {
 }
 
 func (db *Sqlite) ListPics(album string, limit, page int) (ids []string) {
-	query := "SELECT DISTINCT Hash FROM Albums WHERE Album = ? LIMIT ? OFFSET ?;"
+	query := "SELECT DISTINCT Albums.Hash FROM Albums JOIN Images ON Albums.Hash = Images.Hash WHERE Album = ? ORDER BY Images.Date LIMIT ? OFFSET ?;"
 	results, err := db.driver.Query(query, album, limit, limit*(page-1))
 	if err != nil {
 		log.Error(str.T("sql failed: can not get image id from album({})", album))

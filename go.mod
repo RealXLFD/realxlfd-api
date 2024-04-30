@@ -5,6 +5,7 @@ go 1.22
 require (
 	git.realxlfd.cc/RealXLFD/golib v0.0.48
 	github.com/EdlinOrg/prominentcolor v1.0.0
+	github.com/dustin/go-humanize v1.0.1
 	github.com/gin-gonic/gin v1.9.1
 	github.com/mattn/go-sqlite3 v1.14.22
 	github.com/rs/xid v1.5.0

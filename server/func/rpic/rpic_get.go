@@ -17,7 +17,7 @@ import (
 	"rpics-docker/server/shortcut"
 )
 
-func reqRpic(context *gin.Context) {
+func rpicReq(context *gin.Context) {
 	var queries Queries
 	var err error
 	var queryValues url.Values
@@ -70,6 +70,7 @@ func reqRpic(context *gin.Context) {
 		return
 	}
 	if _, ok = queries.Key("imageAve"); ok {
+		server.SQL.StatAddRequest()
 		context.JSON(
 			http.StatusOK,
 			gin.H{
@@ -128,6 +129,7 @@ func reqRpic(context *gin.Context) {
 		}
 	}(file, reqData.Path)
 	log.Debug(str.T("handle rpic request with image({path})", reqData.Path))
+	server.SQL.StatAddRequest()
 	context.DataFromReader(
 		http.StatusOK, contentSize, image.Formats[reqData.Format], file,
 		map[string]string{
@@ -139,7 +141,7 @@ func reqRpic(context *gin.Context) {
 
 // alert: 错误返回""
 func picConvert(pngPath, album string, i *db.ImageData) (path string) {
-	dst := storePath(i.Hash, album, i.Size, image.QualityArr[i.Quality], i.Format)
+	dst := storePath(i.Hash, album, i.Size, image.FileQualityArr[i.Quality], i.Format)
 	err := os.MkdirAll(filepath.Dir(dst), os.ModePerm)
 	if err != nil {
 		log.Error(str.T("can not create path: {path}", filepath.Dir(dst)))

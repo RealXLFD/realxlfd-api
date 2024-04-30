@@ -51,13 +51,14 @@ func rpicDelete(context *gin.Context) {
 			return
 		}
 		for i := range paths {
-			contentSize, err := os.Stat(paths[i])
+			stat, err := os.Stat(paths[i])
 			if err != nil {
 				msg := str.T("can not get file stat: {path}", paths[i])
 				log.Error(msg)
 				shortcut.RespStatusJSON(context, 1, msg)
 				return
 			}
+			contentSize := stat.Size()
 			err = os.Remove(paths[i])
 			if err != nil {
 				msg := str.T("can not remove file: {path}", paths[i])
@@ -65,7 +66,13 @@ func rpicDelete(context *gin.Context) {
 				shortcut.RespStatusJSON(context, 1, msg)
 				return
 			}
-			server.SQL.StatAddImageCache(-contentSize, strings.Contains())
+			server.SQL.StatAddImageCache(
+				-contentSize,
+				!strings.Contains(paths[i], "2k-high.webp") && !strings.Contains(
+					paths[i],
+					"raw-lossless.png",
+				),
+			)
 		}
 		shortcut.RespStatusJSON(context, 0, "delete image successfully")
 		return
