@@ -23,7 +23,7 @@ func readConfig() (port string) {
 	viper.SetDefault("server.loglevel", "info")
 	viper.SetDefault("rpic.concurrency", "auto")
 	viper.SetDefault("rpic.throttling.limit", 100)
-	viper.SetDefault("rpic.throttling.resetCycle", "1m")
+	viper.SetDefault("rpic.throttling.reset_cycle", "1m")
 	if err := viper.ReadInConfig(); err != nil {
 		log.Warn("please edit config.yaml to set up the server")
 		err = viper.WriteConfigAs("config.yaml")
