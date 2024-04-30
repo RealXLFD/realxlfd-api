@@ -69,6 +69,15 @@ func reqRpic(context *gin.Context) {
 		shortcut.RespStatusJSON(context, 1, "image not found")
 		return
 	}
+	if _, ok = queries.Key("imageAve"); ok {
+		context.JSON(
+			http.StatusOK,
+			gin.H{
+				"code": 0, "main_color": str.Join("#", main), "id": reqData.Hash,
+			},
+		)
+		return
+	}
 	var contentSize int64
 	reqData.Path, contentSize, ok = server.SQL.GetPath(reqData)
 	if !ok {
@@ -100,27 +109,8 @@ func reqRpic(context *gin.Context) {
 		)
 		task.Wait()
 		reqData.Path = picConvert(pngPath, rpicReq.Album, reqData)
-		server.SQL.AddImageData(reqData)
-		stat, err := os.Stat(reqData.Path)
-		if err != nil || stat.IsDir() {
-			shortcut.RespStatusJSON(
-				context,
-				1,
-				"internal server error: can not get content size of the converted image",
-			)
-			return
-		}
-		contentSize = stat.Size()
-	}
-	if _, ok = queries.Key("imageAve"); ok {
-		context.JSON(
-			http.StatusOK,
-			gin.H{
-				"code": 0, "main_color": str.Join("#", main), "id": reqData.Hash,
-				"image": gin.H{"size": contentSize, "format": reqData.Format},
-			},
-		)
-		return
+		contentSize = server.SQL.AddImageData(reqData)
+		server.SQL.StatAddImageCache(contentSize, true)
 	}
 	file, err := os.Open(reqData.Path)
 	if err != nil {

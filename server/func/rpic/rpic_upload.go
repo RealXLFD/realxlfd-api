@@ -249,16 +249,18 @@ func rpicPUTUpload(context *gin.Context) {
 			Date: GetTimeStamp(),
 		},
 	)
-	server.SQL.AddImageData(
+	contentSize := server.SQL.AddImageData(
 		&db.ImageData{
 			Path: pngDst, Hash: hash, Size: "raw", Quality: 5, Format: "png",
 		},
 	)
-	server.SQL.AddImageData(
+	server.SQL.StatAddImageCache(contentSize, false)
+	contentSize = server.SQL.AddImageData(
 		&db.ImageData{
 			Path: webpDst, Hash: hash, Size: "2k", Quality: 3, Format: "webp",
 		},
 	)
+	server.SQL.StatAddImageCache(contentSize, false)
 	server.SQL.AddAlbum(hash, album)
 	context.JSON(
 		http.StatusOK, gin.H{

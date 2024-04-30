@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"sync"
 
 	"git.realxlfd.cc/RealXLFD/golib/utils/str"
 	_ "github.com/mattn/go-sqlite3"
@@ -48,6 +49,14 @@ CREATE TABLE IF NOT EXISTS ImageData
     ContentSize INTEGER,
     FOREIGN KEY (Hash) REFERENCES Images (Hash)
 );`
+	CreateTableStatistics = `CREATE TABLE IF NOT EXISTS RpicStat
+(
+    Request INTEGER,
+    CacheCount INTEGER,
+    ImageSpace INTEGER,
+	CacheSpace INTEGER
+);`
+	InitTableStatistics  = `INSERT INTO RpicStat VALUES (0, 0, 0, 0);`
 	CreateIndexImageDate = `CREATE INDEX IF NOT EXISTS idx_date ON Images(Date);`
 	CreateIndexAlbum     = `CREATE INDEX IF NOT EXISTS idx_album ON Albums(Album);`
 )
@@ -63,8 +72,36 @@ func Connect() *Sqlite {
 	justexec(db, CreateTableImageData)
 	justexec(db, CreateIndexImageDate)
 	justexec(db, CreateIndexAlbum)
+	justexec(db, CreateTableStatistics)
+	row := db.QueryRow("SELECT COUNT(*) FROM RpicStat;")
+	var count int
+	var rpicStat *RpicStat
+	err = row.Scan(&count)
+	if err != nil {
+		log.Error("sql error: can not get data from table(RpicStat)")
+	} else {
+		if count == 0 {
+			justexec(db, InitTableStatistics)
+		}
+		// info: read table RpicStat
+		var requestCount, cacheCount int
+		var imageSpace, cacheSpace int64
+		row = db.QueryRow("SELECT (Request,CacheCount,ImageSpace,CacheSpace) FROM RpicStat;")
+		err = row.Scan(&requestCount, &cacheCount, &imageSpace, &cacheSpace)
+		if err != nil {
+			log.Error("sql error: can not get data from table(RpicStat)")
+		}
+		rpicStat = &RpicStat{
+			lock:         &sync.Mutex{},
+			requestCount: requestCount,
+			cacheCount:   cacheCount,
+			imageSpace:   imageSpace,
+			cacheSpace:   cacheSpace,
+		}
+	}
 	return &Sqlite{
-		driver: db,
+		driver:   db,
+		rpicStat: rpicStat,
 	}
 }
 

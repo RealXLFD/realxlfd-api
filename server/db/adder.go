@@ -8,7 +8,8 @@ import (
 )
 
 type Sqlite struct {
-	driver *sql.DB
+	driver   *sql.DB
+	rpicStat *RpicStat
 }
 
 func (db *Sqlite) AddAlbum(hash, album string) {
@@ -74,13 +75,13 @@ Error:
 		),
 	)
 }
-func (db *Sqlite) AddImageData(data *ImageData) {
+func (db *Sqlite) AddImageData(data *ImageData) (contentSize int64) {
 	stat, err := os.Stat(data.Path)
 	if err != nil || stat.IsDir() {
 		log.Error(str.T("can not get content size of image: {path}", data.Path))
 		return
 	}
-	contentSize := stat.Size()
+	contentSize = stat.Size()
 	d := db.driver
 	var affected int64
 	result, err := d.Exec(
@@ -108,4 +109,5 @@ Error:
 			data.Path,
 		),
 	)
+	return 0
 }

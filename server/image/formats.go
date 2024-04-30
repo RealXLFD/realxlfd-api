@@ -26,6 +26,9 @@ var (
 	QualityArr = []string{
 		"[Q=60]", "[Q=70]", "[Q=80]", "[Q=90]", "[Q=95]", "",
 	}
+	FileQualityArr = []string{
+		"low", "mid", "normal", "high", "",
+	}
 	Sizes = map[string]string{
 		"raw":   "",
 		"4k":    "3840",
